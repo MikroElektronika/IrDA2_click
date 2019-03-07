@@ -1,0 +1,79 @@
+{*
+Example for IrDa_2 Click
+
+    Date          : jan 2018.
+    Author        : MikroE Team
+
+Test configuration TIVA :
+    
+    MCU              : TM4C129XNCZAD
+    Dev. Board       : EasyMx PRO v7 for TIVA ARM
+    ARM Compiler ver : v6.0.0.0
+
+---
+
+Description :
+
+The application is composed of three sections :
+
+- System Initialization - GPIO and UART module initialization 
+- Application Initialization - Click and Driver initialization 
+- Application Task - Checks if new data byte have received in rx buffer (ready for reading),
+  and if ready than reads one byte from rx buffer. In second case aplication task writes
+  message data via UART and IR interface.
+                                                                                        v
+*}
+program Click_IrDa_2_TIVA;
+
+uses Click_IrDa_2_types, Click_IrDa_2_config;
+
+const
+    MESSAGE_DATA : array[9] of uint8_t = ('M', 'i', 'k', 'r', 'o', 'E', 13, 10, 0); 
+    
+procedure systemInit(); 
+begin
+
+    mikrobus_gpioInit(_MIKROBUS1, _MIKROBUS_AN_PIN, _GPIO_OUTPUT); 
+    mikrobus_gpioInit(_MIKROBUS1, _MIKROBUS_RST_PIN, _GPIO_OUTPUT); 
+    mikrobus_gpioInit(_MIKROBUS1, _MIKROBUS_CS_PIN, _GPIO_OUTPUT); 
+    mikrobus_uartInit(_MIKROBUS1, @_IRDA2_UART_CFG[0]); 
+    mikrobus_logInit(_MIKROBUS2, 9600); 
+    Delay_ms(100); 
+
+end;
+
+procedure applicationInit(); 
+begin
+
+    irda2_uartDriverInit(T_IRDA2_P(@_MIKROBUS1_GPIO), T_IRDA2_P(@_MIKROBUS1_UART)); 
+    irda2_init(); 
+    mikrobus_logWrite('Initialized', _LOG_LINE); 
+    Delay_ms(100); 
+
+end;
+
+procedure applicationTask(); 
+var
+    tmp : char;
+    rdyFlag : uint8_t;
+begin
+
+    rdyFlag := irda2_byteReady(); 
+    if ((1 = rdyFlag)) then 
+    begin
+        tmp := irda2_readByte(); 
+        mikrobus_logWrite(@tmp, _LOG_BYTE); 
+    end; 
+
+end;
+
+begin
+
+    systemInit(); 
+    applicationInit(); 
+    while (1) do 
+    begin 
+        applicationTask(); 
+    end;
+
+end.
